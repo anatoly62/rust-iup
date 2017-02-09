@@ -1,5 +1,5 @@
 # rust-iup
-A UI framework for Rust
+A UI framework for Rust.
 This library provides a high level wrapper around IUP, a multi-platform toolkit for building graphical user interfaces.
 
 <b>Usage</b><br>
