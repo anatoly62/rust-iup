@@ -279,11 +279,7 @@ pub trait Control:Copy{
     fn set_visible(self,v:bool)->Self{
         set_attr_str(self.ptr(),"VISIBLE",if v==true {"YES"} else {"NO"});
         self
-    }
-    fn get_width(self)->i32 {
-        let (x,y)=get_attr_int2(self.ptr(),"RASTERSIZE");
-        x
-    }
+    }   
     fn font(self,s:&str)->Self{
         set_attr_str(self.ptr(), "FONT",s);
         self
@@ -299,6 +295,14 @@ pub trait Control:Copy{
 }
 
 pub trait Widget: Control {
+    fn set_size(self, s: &str)->Self {
+        set_attr_str(self.ptr(),"RASTERSIZE",s);
+        self
+    }    
+     fn get_width(self)->i32 {
+        let (x,y)=get_attr_int2(self.ptr(),"RASTERSIZE");
+        x
+    }
     fn set_width(self, v: i32)->Self {
         let (x,y)=get_attr_int2(self.ptr(),"RASTERSIZE");
         set_attr_str(self.ptr(),"RASTERSIZE",v.to_string()+"x"+&y.to_string());
