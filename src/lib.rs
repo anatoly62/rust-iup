@@ -28,6 +28,9 @@ macro_rules! vec_ptr {
     };
 }
 
+#[macro_export]
+macro_rules! call_back {($n:ident,$b:block) => (extern fn $n(w:IUPPtr,_:CBPtr,_:CBPtr,_:CBPtr)->i32 {$b;0});}
+
 pub fn p32_to_str(val:CBPtr) ->String{
     let a=val as * const u8;
     let mut v=Vec::new();
