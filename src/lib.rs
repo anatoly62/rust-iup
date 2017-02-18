@@ -63,6 +63,8 @@ impl<'a> Document<'a> {
     }        
 }
 
+pub fn load(w:IUPPtr,s:&str){}
+
 pub fn nil()->IUPPtr{ptr::null_mut()}
 pub fn show(w:IUPPtr){unsafe {IupShow(w)};}
 pub fn show_xy(w:IUPPtr,x:i32,y:i32){unsafe {IupShowXY(w,x,y)};}
