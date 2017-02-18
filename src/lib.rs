@@ -266,7 +266,7 @@ impl ProgressDlg {
 pub  struct Image{pub w: IUPPtr}
 impl Image {
     pub fn new(width:i32,height:i32,pixels: *const u8 ) -> Image { Image { w: { unsafe { IupImage(width,height,pixels)}}}}
-    pub fn from_ptr(p: IUPPtr) -> Image { Image { w: p }}
+    pub fn from(p: IUPPtr) -> Image { Image { w: p }}
     fn set_height(self,n:i32)->Self{
         set_attr_int(self.w,"HEIGHT",n);
         self
@@ -632,7 +632,7 @@ impl Widget for AnyWidget {}
 pub  struct Button{ w: IUPPtr}
 impl Button {
     pub fn new<T: Into<String>>(text: T) -> Button { Button { w: { unsafe { IupButton(CString::new(text.into()).unwrap().as_ptr(), ptr::null_mut()) } } } }
-    pub fn from_ptr(p: IUPPtr) -> Button { Button { w: p }}
+    pub fn from(p: IUPPtr) -> Button { Button { w: p }}
     pub fn get_text(self)->String{
         get_attr_str(self.w,"TITLE")
     }
@@ -660,7 +660,7 @@ impl Widget for Button {}
 pub  struct Calendar{ w: IUPPtr}
 impl Calendar {
     pub fn new() -> Calendar { Calendar{w: { unsafe { IupCalendar()}}}}
-    pub fn from_ptr(p: IUPPtr) -> Calendar { Calendar { w: p }}
+    pub fn from(p: IUPPtr) -> Calendar { Calendar { w: p }}
     pub fn get_date(self)->String{
         get_attr_str(self.w,"VALUE")
     }
@@ -680,7 +680,7 @@ impl Widget for Calendar {}
 pub  struct DatePick{ w: IUPPtr}
 impl DatePick {
     pub fn new() -> DatePick { DatePick{w: { unsafe { IupDatePick()}}}}
-    pub fn from_ptr(p: IUPPtr) -> DatePick { DatePick { w: p }}
+    pub fn from(p: IUPPtr) -> DatePick { DatePick { w: p }}
     pub fn get_date(self)->String{
         get_attr_str(self.w,"VALUE")
     }
@@ -700,7 +700,7 @@ impl Widget for DatePick {}
 pub  struct Dialog{ w: IUPPtr}
 impl Dialog {
     pub fn new(w: IUPPtr) -> Dialog {Dialog {w: { unsafe { IupDialog(w)}}}}
-    pub fn from_ptr(p:IUPPtr) -> Dialog { Dialog { w: p }}
+    pub fn from(p:IUPPtr) -> Dialog { Dialog { w: p }}
     pub fn get_text(self)->String{
         get_attr_str(self.w,"TITLE")
     }
@@ -736,7 +736,7 @@ impl Widget for Dialog {}
 pub  struct Label{ w: IUPPtr}
 impl Label {
     pub fn new<T: Into<String>>(text:T) -> Label {Label{w: { unsafe { IupLabel(CString::new(text.into()).unwrap().as_ptr())}}}}
-    pub fn from_ptr(p: IUPPtr) -> Label { Label { w: p }}
+    pub fn from(p: IUPPtr) -> Label { Label { w: p }}
     pub fn get_text(self)->String{
         get_attr_str(self.w,"TITLE")
     }
@@ -761,7 +761,7 @@ impl Widget for Label {}
 pub  struct List{ w: IUPPtr}
 impl List {
     pub fn new() -> List { List{w: { unsafe { IupList(ptr::null_mut())}}}}
-    pub fn from_ptr(p: IUPPtr) -> List { List { w: p }}
+    pub fn from(p: IUPPtr) -> List { List { w: p }}
     pub fn add(self,val:&str)->Self{
         set_attr_str(self.w,"APPENDITEM",val);
         self
@@ -818,7 +818,7 @@ impl Widget for List {}
 pub  struct ProgressBar{ w: IUPPtr}
 impl ProgressBar {
     pub fn new() -> ProgressBar { ProgressBar { w: { unsafe { IupProgressBar() } } } }
-    pub fn from_ptr(p: IUPPtr) -> ProgressBar { ProgressBar { w: p } }
+    pub fn from(p: IUPPtr) -> ProgressBar { ProgressBar { w: p } }
     pub fn get_min(self) -> String {
         get_attr_str(self.w, "MIN")
     }
@@ -848,7 +848,7 @@ impl Widget for ProgressBar {}
 pub  struct Slider{ w: IUPPtr}
 impl Slider {
     pub fn new<T: Into<String>>(text:T) -> Slider {Slider{w: { unsafe { IupVal(CString::new(text.into()).unwrap().as_ptr())}}}}
-    pub fn from_ptr(p: IUPPtr) -> Slider { Slider { w: p } }
+    pub fn from(p: IUPPtr) -> Slider { Slider { w: p } }
     pub fn get_min(self) -> String {
         get_attr_str(self.w, "MIN")
     }
@@ -889,7 +889,7 @@ impl Widget for Slider {}
 pub  struct Text{ w: IUPPtr}
 impl Text {
     pub fn new() -> Text { Text{w: { unsafe { IupText(ptr::null_mut())}}}}
-    pub fn from_ptr(p: IUPPtr) -> Text { Text { w: p }}
+    pub fn from(p: IUPPtr) -> Text { Text { w: p }}
     pub fn get_text(self)->String{
         get_attr_str(self.w,"VALUE")
     }
@@ -957,7 +957,7 @@ impl Widget for Text {}
 pub  struct Toggle{ w: IUPPtr}
 impl Toggle {
     pub fn new<T: Into<String>>(text: T) -> Toggle{ Toggle { w:{unsafe { IupToggle(CString::new(text.into()).unwrap().as_ptr(), ptr::null_mut())}}}}
-    pub fn from_ptr(p: IUPPtr) -> Toggle { Toggle { w: p } }
+    pub fn from(p: IUPPtr) -> Toggle { Toggle { w: p } }
     pub fn get_text(self) -> String {
         get_attr_str(self.w, "TITLE")
     }
