@@ -52,7 +52,7 @@ pub fn p8_to_str(val: * const i8)->String{
         String::from_utf8(v).unwrap()
     }
 }
-
+#[derive(Copy,Clone)]
 pub struct Document <'a>{
     s:&'a str ,
 }
