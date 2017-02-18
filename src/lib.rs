@@ -70,7 +70,7 @@ pub fn popup(w:IUPPtr,x:i32,y:i32)->i32{unsafe {IupPopup(w,x,y)}}
 pub fn hide(w:IUPPtr)->i32{unsafe{IupHide(w)}}
 pub fn exit_loop(){unsafe{IupExitLoop()}}
 
-pub fn init_gui()->Document{
+pub fn init_gui()->Document <'a>{
     let mode = CString::new("UTF8MODE".to_string()).unwrap();
     let val = CString::new("YES".to_string()).unwrap();
     unsafe {
