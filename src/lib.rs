@@ -94,11 +94,18 @@ pub fn loop_gui(){
         IupMainLoop();
         IupClose() }
 }
-pub fn message<T: Into<String>, M: Into<String>>(t: T, m: M) {
-    let title = CString::new(t.into()).unwrap();
-    let message = CString::new(m.into()).unwrap();
+// pub fn message<T: Into<String>, M: Into<String>>(t: T, m: M) {
+//     let title = CString::new(t.into()).unwrap();
+//     let message = CString::new(m.into()).unwrap();
+//     unsafe { IupMessage(title.as_ptr(), message.as_ptr()); }
+// }
+
+pub fn message(t: &str, m: &str) {
+    let title = CString::new(t.to_string()).unwrap();
+    let message = CString::new(m.to_string()).unwrap();
     unsafe { IupMessage(title.as_ptr(), message.as_ptr()); }
 }
+
 pub fn get_attr_str<T: Into<String>>(w:IUPPtr,a: T)->String {
     let attr = CString::new(a.into()).unwrap();
     unsafe {p8_to_str(IupGetAttribute(w, attr.as_ptr()))}
