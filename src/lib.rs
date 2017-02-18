@@ -53,7 +53,9 @@ pub fn p8_to_str(val: * const i8)->String{
     }
 }
 
-pub struct Document <'a>;
+pub struct Document <'a>{
+    s:&str + 'a,
+};
 impl<'a> Document<'a> {
     pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
         let name = CString::new(nm.into()).unwrap();
@@ -77,7 +79,7 @@ pub fn init_gui<'a>()->Document <'a>{
         IupOpen(ptr::null(), ptr::null());
         IupSetGlobal( mode.as_ptr(), val.as_ptr());
     }
-    Document
+    Document {s:""}
 }
 pub fn set_global(a:&str,v:&str){
     unsafe {
