@@ -57,12 +57,10 @@ pub struct Document <'a>{
     s:&'a str ,
 }
 impl<'a> Document<'a> {
-    pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
+    pub fn elem<T: Into<String>>(self,nm: T, )->IUPPtr {
         let name = CString::new(nm.into()).unwrap();
         unsafe { IupGetHandle(name.as_ptr()) }
-    }
-    pub fn load(self,s:&str){}
-        
+    }        
 }
 
 pub fn nil()->IUPPtr{ptr::null_mut()}
