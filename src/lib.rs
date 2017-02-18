@@ -130,11 +130,11 @@ pub fn set_attr_int<T: Into<String>>(w:IUPPtr, a: T, v:i32 ) {
     let a = CString::new(a.into()).unwrap();
     unsafe {IupSetInt(w,a.as_ptr(), v);}
 }
-pub fn get_elem<T: Into<String>>(nm: T, )->IUPPtr {
+pub fn get_handle<T: Into<String>>(nm: T, )->IUPPtr {
     let name = CString::new(nm.into()).unwrap();
     unsafe { IupGetHandle(name.as_ptr()) }
 }
-pub fn set_elem<T: Into<String>>(nm: T,w:IUPPtr)->IUPPtr {
+pub fn set_handle<T: Into<String>>(nm: T,w:IUPPtr)->IUPPtr {
     let name = CString::new(nm.into()).unwrap();
     unsafe { IupSetHandle(name.as_ptr(), w) }
 }
