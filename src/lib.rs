@@ -53,7 +53,7 @@ pub fn p8_to_str(val: * const i8)->String{
     }
 }
 
-pub struct Document;
+pub struct Document <'a>;
 impl Document{
     pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
         let name = CString::new(nm.into()).unwrap();
