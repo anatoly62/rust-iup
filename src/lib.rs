@@ -119,11 +119,11 @@ pub fn set_attr_int<T: Into<String>>(w:IUPPtr, a: T, v:i32 ) {
     let a = CString::new(a.into()).unwrap();
     unsafe {IupSetInt(w,a.as_ptr(), v);}
 }
-pub fn get_handle<T: Into<String>>(nm: T, )->IUPPtr {
+pub fn get_elem<T: Into<String>>(nm: T, )->IUPPtr {
     let name = CString::new(nm.into()).unwrap();
     unsafe { IupGetHandle(name.as_ptr()) }
 }
-pub fn set_handle<T: Into<String>>(nm: T,w:IUPPtr)->IUPPtr {
+pub fn set_elem<T: Into<String>>(nm: T,w:IUPPtr)->IUPPtr {
     let name = CString::new(nm.into()).unwrap();
     unsafe { IupSetHandle(name.as_ptr(), w) }
 }
@@ -133,6 +133,16 @@ pub fn child_by_name<T: Into<String>>(w:IUPPtr,nm:T )->IUPPtr {
 }
 pub fn call_back(w:IUPPtr,s:&str,f: Icallback){
     unsafe {IupSetCallback(w, CString::new(s.to_string()).unwrap().as_ptr(),f)};
+}
+
+struct Document;
+impl Document{
+    pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
+        let name = CString::new(nm.into()).unwrap();
+        unsafe { IupGetHandle(name.as_ptr()) }
+    }
+    pub fn load(self,s:String){}
+        
 }
 
 //Predefined Dialogs
