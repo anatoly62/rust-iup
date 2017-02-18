@@ -53,6 +53,16 @@ pub fn p8_to_str(val: * const i8)->String{
     }
 }
 
+struct Document;
+impl Document{
+    pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
+        let name = CString::new(nm.into()).unwrap();
+        unsafe { IupGetHandle(name.as_ptr()) }
+    }
+    pub fn load(self,s:String){}
+        
+}
+
 pub fn nil()->IUPPtr{ptr::null_mut()}
 pub fn show(w:IUPPtr){unsafe {IupShow(w)};}
 pub fn show_xy(w:IUPPtr,x:i32,y:i32){unsafe {IupShowXY(w,x,y)};}
@@ -60,13 +70,14 @@ pub fn popup(w:IUPPtr,x:i32,y:i32)->i32{unsafe {IupPopup(w,x,y)}}
 pub fn hide(w:IUPPtr)->i32{unsafe{IupHide(w)}}
 pub fn exit_loop(){unsafe{IupExitLoop()}}
 
-pub fn init_gui(){
+pub fn init_gui()->Document{
     let mode = CString::new("UTF8MODE".to_string()).unwrap();
     let val = CString::new("YES".to_string()).unwrap();
     unsafe {
         IupOpen(ptr::null(), ptr::null());
         IupSetGlobal( mode.as_ptr(), val.as_ptr());
     }
+    Document
 }
 pub fn set_global(a:&str,v:&str){
     unsafe {
@@ -135,15 +146,7 @@ pub fn call_back(w:IUPPtr,s:&str,f: Icallback){
     unsafe {IupSetCallback(w, CString::new(s.to_string()).unwrap().as_ptr(),f)};
 }
 
-struct Document;
-impl Document{
-    pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
-        let name = CString::new(nm.into()).unwrap();
-        unsafe { IupGetHandle(name.as_ptr()) }
-    }
-    pub fn load(self,s:String){}
-        
-}
+
 
 //Predefined Dialogs
 #[derive(Copy,Clone)]
