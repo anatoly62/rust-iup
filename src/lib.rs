@@ -54,7 +54,7 @@ pub fn p8_to_str(val: * const i8)->String{
 }
 
 pub struct Document <'a>{
-    s:&str ,
+    s:&'a str ,
 }
 impl<'a> Document<'a> {
     pub fn get_elem<T: Into<String>>(self,nm: T, )->IUPPtr {
