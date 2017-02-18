@@ -59,7 +59,7 @@ impl Document{
         let name = CString::new(nm.into()).unwrap();
         unsafe { IupGetHandle(name.as_ptr()) }
     }
-    pub fn load(self,s:String){}
+    pub fn load(self,s:&str){}
         
 }
 
