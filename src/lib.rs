@@ -8,7 +8,7 @@ use iup::{
     IupOpen,IupMainLoop,IupExitLoop,IupHide,IupClose,IupGetDialogChild,
     IupGetAttribute,IupGetInt,IupGetIntInt,IupSetAttributeId2,IupSetInt,IupSetAttributes, IupSetStrAttribute,IupSetAttribute,
     IupCboxv,IupGridBoxv,IupHboxv,IupVboxv,IupZboxv,IupFill,IupRadio,IupFrame,IupExpander,IupSbox,IupSplit,IupScrollBox,IupTabsv,
-    IupMessage,IupDialog,IupButton,IupLabel,IupText,IupList,IupDatePick,IupToggle,IupVal,IupProgressBar,IupCalendar,
+    IupMessage,IupDialog,IupButton,IupLabel,IupMatrix,IupText,IupList,IupDatePick,IupToggle,IupVal,IupProgressBar,IupCalendar,
     IupColorDlg,IupFileDlg,IupFontDlg,IupMessageDlg,IupProgressDlg,IupMenuv,IupSubmenu,IupItem,IupImage,IupImageLibOpen
 };
 
@@ -999,3 +999,22 @@ impl Toggle {
 }
 impl Control for Toggle{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for Toggle {}
+
+#[derive(Copy,Clone)]
+pub  struct Table{ w: IUPPtr}
+impl Table {
+    pub fn new() -> Table {
+        let p= {unsafe { IupMatrix(ptr::null_mut())}};
+        set_attr_str(p,"INDEX","-1");
+        set_attrs(p,"NUMLIN_VISIBLE=0,NUMCOL_VISIBLE=0,RESIZEMATRIX=YES,HEIGHT0=8");
+        set_attr_str(p,"NUMCOL","6");
+        set_attr_str(p,"NUMLIN","2");
+        Table{w:p}
+    }
+    pub fn from(p: IUPPtr) -> Table { Table { w: p }}
+}
+
+impl Control for Table{ fn ptr(self) ->IUPPtr{ self.w}}
+impl Widget for Table {}
+
+
