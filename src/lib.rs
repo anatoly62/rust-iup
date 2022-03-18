@@ -89,6 +89,7 @@ pub fn set_global(a:&str,v:&str){
         let a = CString::new(a.to_string()).unwrap();
         let v = CString::new(v.to_string()).unwrap();
         IupSetGlobal(a.as_ptr(), v.as_ptr());
+        IupControlsOpen();
     }
 }
 
