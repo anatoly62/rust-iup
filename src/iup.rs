@@ -36,6 +36,9 @@ extern {
     /*                        Main API                                      */
     /************************************************************************/
     pub fn IupOpen(argc: *const c_int, argv: *const *const *const c_char) -> c_int;
+    pub fn IupMatrix(action: *const c_char) -> IUPPtr;
+    pub fn IupControlsOpen() -> c_int;
+
     pub fn IupClose();
     pub fn IupImageLibOpen();
 
