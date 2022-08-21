@@ -2,18 +2,33 @@
 extern crate libc;
 mod iup;
 use std::ptr;
+use std::collections::HashMap;
+use std::cell::RefCell;
 use std::ffi::CString;
 use iup::{
-    IupSetGlobal,Ihandle,IupSetCallback,Icallback,IupSetHandle,IupGetHandle,IupShow,IupShowXY,IupPopup,
-    IupOpen,IupMainLoop,IupExitLoop,IupHide,IupClose,IupGetDialogChild,
+    IupSetGlobal,Ihandle,IupSetCallback,Icallback,IupSetHandle,IupGetHandle,IupShow,IupShowXY,IupPopup,IupDestroy,
+    IupOpen,IupControlsOpen,IupMainLoop,IupExitLoop,IupHide,IupClose,IupGetDialogChild, IupSetAttributeHandle,IupSetFocus,
     IupGetAttribute,IupGetInt,IupGetIntInt,IupSetAttributeId2,IupSetInt,IupSetAttributes, IupSetStrAttribute,IupSetAttribute,
     IupCboxv,IupGridBoxv,IupHboxv,IupVboxv,IupZboxv,IupFill,IupRadio,IupFrame,IupExpander,IupSbox,IupSplit,IupScrollBox,IupTabsv,
-    IupMessage,IupDialog,IupButton,IupLabel,IupMatrix,IupText,IupList,IupDatePick,IupToggle,IupVal,IupProgressBar,IupCalendar,
-    IupColorDlg,IupFileDlg,IupFontDlg,IupMessageDlg,IupProgressDlg,IupMenuv,IupSubmenu,IupItem,IupImage,IupImageLibOpen
+    IupMessage,IupDialog,IupButton,IupFlatButton,IupLabel,IupMatrix,IupText,IupList,IupDatePick,IupToggle,IupVal,IupProgressBar,IupCalendar,IupSeparator,
+    IupColorDlg,IupFileDlg,IupFontDlg,IupMessageDlg,IupProgressDlg,IupMenuv,IupSubmenu,IupItem,IupImage,IupImageLibOpen,IupLoadImage
 };
-
+const CURSOR_COLOR:&str="145 201 247";
 pub type IUPPtr = *mut Ihandle;
 pub type CBPtr = *const u32;
+
+thread_local! {
+    pub static BUTTONS_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn()>>> = RefCell::new(HashMap::new());
+    pub static COMBOS_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn()>>> = RefCell::new(HashMap::new());
+    pub static DATES_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn()>>> = RefCell::new(HashMap::new());
+    pub static FLAT_BUTTONS_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn()>>> = RefCell::new(HashMap::new());
+    pub static MENU_ITEMS_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn()>>> = RefCell::new(HashMap::new());
+    pub static TEXTS_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn()>>> = RefCell::new(HashMap::new());
+    pub static TEXTS_MAPK__: RefCell<HashMap<IUPPtr,Box< dyn Fn(i32)>>> = RefCell::new(HashMap::new());
+    pub static TABLES_MAP__: RefCell<HashMap<IUPPtr,Box< dyn Fn(i32)>>> = RefCell::new(HashMap::new());
+    pub static TABLES_MAP2__: RefCell<HashMap<IUPPtr,Box< dyn Fn(i32)>>> = RefCell::new(HashMap::new());
+    pub static TABLES_MAPM__: RefCell<HashMap<IUPPtr,Box< dyn Fn(i32)>>> = RefCell::new(HashMap::new());
+}
 
 #[macro_export]
 macro_rules! vec_ptr {
@@ -73,6 +88,7 @@ pub fn show(w:IUPPtr){unsafe {IupShow(w)};}
 pub fn show_xy(w:IUPPtr,x:i32,y:i32){unsafe {IupShowXY(w,x,y)};}
 pub fn popup(w:IUPPtr,x:i32,y:i32)->i32{unsafe {IupPopup(w,x,y)}}
 pub fn hide(w:IUPPtr)->i32{unsafe{IupHide(w)}}
+pub fn close(w:IUPPtr){unsafe{IupDestroy(w)}}
 pub fn exit_loop(){unsafe{IupExitLoop()}}
 
 pub fn init_gui<'a>()->Document <'a>{
@@ -81,6 +97,7 @@ pub fn init_gui<'a>()->Document <'a>{
     unsafe {
         IupOpen(ptr::null(), ptr::null());
         IupSetGlobal( mode.as_ptr(), val.as_ptr());
+		IupControlsOpen();
     }
     Document {s:""}
 }
@@ -130,6 +147,10 @@ pub fn set_attr<T: Into<String>,V:Into<String>>(w:IUPPtr, a: T, v: V) {
     let v = CString::new(v.into()).unwrap();
     unsafe {IupSetAttribute(w,a.as_ptr(), v.as_ptr());}
 }
+pub fn set_attr_handle<T: Into<String>>(w:IUPPtr, a: T, v: IUPPtr) {
+    let a = CString::new(a.into()).unwrap();
+    unsafe {IupSetAttributeHandle(w,a.as_ptr(), v);}
+}
 pub fn set_attrs<T: Into<String>>(w:IUPPtr, a: T) {
     let attr = CString::new(a.into()).unwrap();
     unsafe {IupSetAttributes(w,attr.as_ptr());}
@@ -151,6 +172,10 @@ pub fn set_handle<T: Into<String>>(nm: T,w:IUPPtr)->IUPPtr {
     let name = CString::new(nm.into()).unwrap();
     unsafe { IupSetHandle(name.as_ptr(), w) }
 }
+pub fn load_image<T: Into<String>>( nm: T)->IUPPtr {
+    let name = CString::new(nm.into()).unwrap();
+    unsafe { IupLoadImage(name.as_ptr()) }
+}
 pub fn child_by_name<T: Into<String>>(w:IUPPtr,nm:T )->IUPPtr {
     let name = CString::new(nm.into()).unwrap();
     unsafe { IupGetDialogChild(w,name.as_ptr()) }
@@ -158,8 +183,6 @@ pub fn child_by_name<T: Into<String>>(w:IUPPtr,nm:T )->IUPPtr {
 pub fn call_back(w:IUPPtr,s:&str,f: Icallback){
     unsafe {IupSetCallback(w, CString::new(s.to_string()).unwrap().as_ptr(),f)};
 }
-
-
 
 //Predefined Dialogs
 #[derive(Copy,Clone)]
@@ -322,7 +345,7 @@ pub trait Control:Copy{
 
 pub trait Widget: Control {
     fn set_size(self, s: &str)->Self {
-        set_attr_str(self.ptr(),"RASTERSIZE",s);
+        set_attr_str(self.ptr(),"SIZE",s);
         self
     }    
      fn get_width(self)->i32 {
@@ -367,6 +390,10 @@ pub trait Widget: Control {
     }
     fn fg_color(self,s:&str)->Self{
         set_attr_str(self.ptr(), "FGCOLOR",s);
+        self
+    }
+    fn set_focus(self)->Self{
+        unsafe{IupSetFocus(self.ptr())};
         self
     }
 }
@@ -582,10 +609,24 @@ impl SubMenu {
 }
 impl Control for SubMenu{ fn ptr(self) ->IUPPtr{ self.w}}
 
+extern fn _menu_item_click_(w:IUPPtr,_:i32,_:CBPtr,sp:CBPtr)->i32{
+    MENU_ITEMS_MAP__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x();
+        }
+    });
+    0
+}
+
 #[derive(Copy,Clone)]
 pub struct MenuItem{ w: IUPPtr}
 impl MenuItem {
-    pub fn new(s:&str)->MenuItem{MenuItem{w:{unsafe{IupItem(CString::new(s.to_string()).unwrap().as_ptr(),ptr::null_mut())}}}}
+    pub fn new(s:&str)->Self{
+        let p=unsafe{if s=="" {IupSeparator()} else {IupItem(CString::new(s.to_string()).unwrap().as_ptr(),ptr::null_mut())}};
+        call_back(p,"ACTION",_menu_item_click_);
+        Self{w:p}
+    }
 
     pub fn set_text(self,s:&str)->Self{
         set_attr_str(self.w,"TITLE ",s);
@@ -617,8 +658,11 @@ impl MenuItem {
         set_attr_str(self.w,"IMPRESS",s);
         self
     }
-    pub fn on_click(self,f: Icallback)->Self{
-        call_back(self.w,"ACTION",f);
+    pub fn on_click(self, f:Box< dyn Fn()>)->Self{
+        MENU_ITEMS_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
         self
     }
 }
@@ -632,10 +676,25 @@ impl AnyWidget {pub fn new(p:IUPPtr) -> AnyWidget { AnyWidget{w: p}}}
 impl Control for AnyWidget{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for AnyWidget {}
 
+
+extern fn _button_click_(w:IUPPtr,_:i32,_:CBPtr,sp:CBPtr)->i32{
+    BUTTONS_MAP__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x();
+        }
+    });
+    0
+}
+
 #[derive(Copy,Clone)]
 pub  struct Button{ w: IUPPtr}
 impl Button {
-    pub fn new<T: Into<String>>(text: T) -> Button { Button { w: { unsafe { IupButton(CString::new(text.into()).unwrap().as_ptr(), ptr::null_mut()) } } } }
+    pub fn new<T: Into<String>>(text: T) -> Button {
+        let p={ unsafe { IupButton(CString::new(text.into()).unwrap().as_ptr(), ptr::null_mut()) } };
+        call_back(p,"ACTION",_button_click_);
+        Button { w:p  }
+    }
     pub fn from(p: IUPPtr) -> Button { Button { w: p }}
     pub fn get_text(self)->String{
         get_attr_str(self.w,"TITLE")
@@ -652,13 +711,48 @@ impl Button {
         set_attr_str(self.w,"IMAGE",s);
         self
     }
-    pub fn on_click(self,f: Icallback)->Self{
-        call_back(self.w,"ACTION",f);
+    pub fn on_click(self, f:Box< dyn Fn()>)->Self{
+        BUTTONS_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
         self
     }
 }
 impl Control for Button{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for Button {}
+
+extern fn _flat_button_click_(w:IUPPtr,_:i32,_:CBPtr,sp:CBPtr)->i32{
+    FLAT_BUTTONS_MAP__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x();
+        }
+    });
+    0
+}
+
+#[derive(Copy,Clone)]
+pub  struct FlatButton{ w: IUPPtr}
+impl FlatButton {
+    pub fn new(image:&str,hint:&str) -> FlatButton {
+        let p={ unsafe { IupFlatButton(CString::new("").unwrap().as_ptr(), ptr::null_mut()) } };
+        set_attr_str(p,"TIP",hint);
+        call_back(p,"FLAT_ACTION",_flat_button_click_);
+        set_attr_handle(p,"IMAGE",load_image(image));
+        FlatButton { w:p  }
+    }
+    pub fn from(p: IUPPtr) -> FlatButton { FlatButton { w: p }}
+    pub fn on_click(self, f:Box< dyn Fn()>)->Self{
+        FLAT_BUTTONS_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
+        self
+    }
+}
+impl Control for FlatButton{ fn ptr(self) ->IUPPtr{ self.w}}
+impl Widget for FlatButton {}
 
 #[derive(Copy,Clone)]
 pub  struct Calendar{ w: IUPPtr}
@@ -680,20 +774,48 @@ impl Calendar {
 impl Control for Calendar{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for Calendar {}
 
+extern fn _date_change_(w:IUPPtr,_:i32,_:CBPtr,sp:CBPtr)->i32{
+    DATES_MAP__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x();
+        }
+    });
+    0
+}
+
 #[derive(Copy,Clone)]
 pub  struct DatePick{ w: IUPPtr}
 impl DatePick {
-    pub fn new() -> DatePick { DatePick{w: { unsafe { IupDatePick()}}}}
-    pub fn from(p: IUPPtr) -> DatePick { DatePick { w: p }}
-    pub fn get_date(self)->String{
-        get_attr_str(self.w,"VALUE")
+    pub fn new() -> DatePick {
+        let p={ unsafe { IupDatePick()}};
+        set_attrs(p,"SEPARATOR=-,ZEROPRECED=yes,SIZE=x11");
+        call_back(p,"VALUECHANGED_CB",_date_change_);
+        DatePick{w: p}
     }
-    pub fn set_date(self,s:&str)->Self{
-        set_attr_str(self.w,"VALUE",s);
+    pub fn from(p: IUPPtr) -> DatePick { DatePick { w: p }}
+    pub fn get_text(self)->String{
+        let s=get_attr_str(self.w,"VALUE");
+        let mut v:Vec<&str>=s.split('/').collect();
+        let s1="0".to_string()+v[1];
+        let s2="0".to_string()+v[2];
+        if v[1].len()<2 {
+            v[1]=&s1;
+        }
+        if v[2].len()<2 {
+            v[2]=&s2;
+        }
+        v[0].to_string()+"-"+v[1]+"-"+v[2]
+    }
+    pub fn set_text(self,s:&str)->Self{
+        set_attr_str(self.w,"VALUE",s.replace("-","/"));
         self
     }
-    pub fn on_change(self,f: Icallback)->Self{
-        call_back(self.w,"VALUECHANGED_CB",f);
+    pub fn on_change(self, f:Box< dyn Fn()>)->Self{
+        DATES_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
         self
     }
 }
@@ -710,6 +832,10 @@ impl Dialog {
     }
     pub fn set_text(self,s:&str)->Self{
         set_attr_str(self.w,"TITLE",s);
+        self
+    }
+    pub fn set_image(self,s:&str)->Self{
+        set_attr_handle(self.w,"ICON",load_image(s));
         self
     }
     pub fn menu(self,s:&str)->Self{
@@ -730,6 +856,9 @@ impl Dialog {
     pub fn resize(self,v:bool)->Self{
         set_attr_str(self.ptr(),"RESIZE",if v==true {"ON"} else {"OF"});
         self
+    }
+    pub fn close(self){
+        unsafe{IupDestroy(self.ptr())};
     }
 }
 impl Control for Dialog{ fn ptr(self) ->IUPPtr{ self.w}}
@@ -761,11 +890,26 @@ impl Label {
 impl Control for Label{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for Label {}
 
+extern fn _combo_change_(w:IUPPtr,_:i32,_:CBPtr,sp:CBPtr)->i32{
+    COMBOS_MAP__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x();
+        }
+    });
+    0
+}
+
 #[derive(Copy,Clone)]
-pub  struct List{ w: IUPPtr}
-impl List {
-    pub fn new() -> List { List{w: { unsafe { IupList(ptr::null_mut())}}}}
-    pub fn from(p: IUPPtr) -> List { List { w: p }}
+pub  struct Combo{ w: IUPPtr}
+impl Combo {
+    pub fn new() -> Combo {
+        let p= { unsafe { IupList(ptr::null_mut())}};
+        set_attr_str(p,"DROPDOWN","YES");
+        call_back(p,"VALUECHANGED_CB",_combo_change_);
+        Combo{w:p}
+    }
+    pub fn from(p: IUPPtr) -> Combo { Combo { w: p }}
     pub fn add(self,val:&str)->Self{
         set_attr_str(self.w,"APPENDITEM",val);
         self
@@ -777,10 +921,11 @@ impl List {
         set_attr_str(self.w,"DROPDOWN",if val==true {"YES"} else {"NO"});
         self
     }
-    pub fn fill (self,v:Vec<&str>)->Self{
+    pub fn fill (self,v:Vec<String>)->Self{
         for (i,el) in v.iter().enumerate(){
-            set_attr_str(self.w,(i+1).to_string(),el.to_string());
+            set_attr_str(self.w,(i+1).to_string(),el);
         }
+        self.set_index(0);
         self
     }
     pub fn get_index(self)->i32{
@@ -810,13 +955,44 @@ impl List {
         self
     }
 
-    pub fn on_change(self,f: Icallback)->Self{
-        call_back(self.w,"VALUECHANGED_CB",f);
+    pub fn on_change(self, f:Box< dyn Fn()>)->Self{
+        COMBOS_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
         self
     }
+    pub fn search(self,s:&str,n:usize){
+        let ss:Vec<&str>=s.split(' ').collect();
+        let l:i32=get_attr_str(self.w,"COUNT").parse().unwrap();
+        for i in 0..l{
+            let value=get_attr_str(self.w,&(i+1).to_string());
+            let item=value.to_lowercase();
+            let names:Vec<&str>=item.split(' ').collect();
+            if names.len()==n+1 {
+                if names[n].starts_with(s){
+                    self.set_index(i);
+                    break;
+                }
+            }else if ss.len()>1{
+                if names[n].starts_with(ss[0]) && names[n+1].starts_with(ss[1]){
+                    self.set_index(i);
+                    break;
+                }
+            }else if s.len()>0 && ss.len()==1{
+                if s.starts_with(" ") && names[n+1].starts_with(ss[0]){
+                    self.set_index(i);
+                    break;
+                }else if !s.starts_with(" ") && names[n].starts_with(ss[0]){
+                    self.set_index(i);
+                    break;
+                }
+            }
+        }
+    }
 }
-impl Control for List{ fn ptr(self) ->IUPPtr{ self.w}}
-impl Widget for List {}
+impl Control for Combo{ fn ptr(self) ->IUPPtr{ self.w}}
+impl Widget for Combo {}
 
 #[derive(Copy,Clone)]
 pub  struct ProgressBar{ w: IUPPtr}
@@ -889,11 +1065,35 @@ impl Slider {
 impl Control for Slider{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for Slider {}
 
+extern fn _text_change_(w:IUPPtr,_:i32,_:CBPtr,sp:CBPtr)->i32{
+    TEXTS_MAP__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x();
+        }
+    });
+    0
+}
+extern fn _text_key_(w:IUPPtr,r:i32,_:CBPtr,sp:CBPtr)->i32{
+    TEXTS_MAPK__.with(|c| {
+        let  v = c.borrow();
+        if let Some(x)=v.get(&w){
+            x(r);
+        }
+    });
+    0
+}
+
 #[derive(Copy,Clone)]
-pub  struct Text{ w: IUPPtr}
-impl Text {
-    pub fn new() -> Text { Text{w: { unsafe { IupText(ptr::null_mut())}}}}
-    pub fn from(p: IUPPtr) -> Text { Text { w: p }}
+pub  struct Text{ w: IUPPtr} 
+impl  Text  {
+    pub fn new() -> Self {
+        let p= { unsafe {  IupText(ptr::null_mut())}};
+        call_back(p,"K_ANY",_text_key_);
+        call_back(p,"VALUECHANGED_CB",_text_change_);
+        Self {w:p}    
+    }
+    pub fn from(p: IUPPtr) -> Self { Self { w: p }}
     pub fn get_text(self)->String{
         get_attr_str(self.w,"VALUE")
     }
@@ -907,6 +1107,10 @@ impl Text {
     }
     pub fn password(self,val:bool)->Self{
         set_attr_str(self.w,"PASSWORD",if val==true {"YES"} else {"NO"});
+        self
+    }
+    pub fn read_only(self,val:bool)->Self{
+        set_attr_str(self.w,"READONLY",if val==true {"YES"} else {"NO"});
         self
     }
     pub fn select_all(self)->Self{
@@ -945,12 +1149,22 @@ impl Text {
         set_attr_str(self.w,"SPINVALUE",s);
         self
     }
-    pub fn on_change(self,f: Icallback)->Self{
-        call_back(self.w,"VALUECHANGED_CB",f);
-        self
-    }
     pub fn on_spin(self,f: Icallback)->Self{
         call_back(self.w,"SPIN_CB",f);
+        self
+    }
+    pub fn on_change(self, f:Box< dyn Fn()>)->Self{
+        TEXTS_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
+        self
+    }
+    pub fn on_key(self, f:Box< dyn Fn(i32)>)->Self{
+        TEXTS_MAPK__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
         self
     }
 }
@@ -974,7 +1188,7 @@ impl Toggle {
         self
     }
     pub fn is_checked(self) -> bool {
-        if get_attr_str(self.w, "VALUE")=="YES" {true} else {false}
+        if get_attr_str(self.w, "VALUE")=="ON" {true} else {false}
     }
     pub fn check(self,v:bool)->Self{
         set_attr_str(self.w,"VALUE",if v==true {"YES"} else {"NO"});
@@ -1000,18 +1214,255 @@ impl Toggle {
 impl Control for Toggle{ fn ptr(self) ->IUPPtr{ self.w}}
 impl Widget for Toggle {}
 
+
+pub fn cursor(w: IUPPtr,l:i32,val:&str){
+        let r = l.to_string() + ":*";
+        set_attr_str(w, "BGCOLOR".to_string() + &r, val.to_string());
+        set_attr_str(w, "REDRAW".to_string(), "L".to_string() + &l.to_string());
+}
+
+
+#[allow(unused)]
+extern fn _table_click_(w:IUPPtr,r:i32,_:CBPtr,sp:CBPtr)->i32{
+    if r>0 {
+        let idx:i32=get_attr_str(w,"INDEX").parse().unwrap();
+        if idx>0 {
+            cursor(w,idx,"255 255 255");
+        }
+        cursor(w,r,CURSOR_COLOR);
+        set_attr_str(w,"INDEX",&r.to_string());
+
+        let s=p32_to_str(sp);
+        let v= s.into_bytes();
+        if v[5] as char =='D' {
+            TABLES_MAP2__.with(|c| {
+                let mut v = c.borrow();
+                if let Some(x)=v.get(&w){
+                    x(r-1);
+                }
+            });
+        }else if v[4] as char =='3'{
+            set_attr(w,"FOCUSCELL",&(r.to_string()+":1"));
+            TABLES_MAPM__.with(|c| {
+                let mut v = c.borrow();
+                if let Some(x)=v.get(&w){
+                    x(r-1);
+                }
+            });
+        }else{
+            TABLES_MAP__.with(|c| {
+                let mut v = c.borrow();
+                if let Some(x)=v.get(&w){
+                    x(r-1);
+                }
+            });
+        }
+    }
+    0
+}
+
 #[derive(Copy,Clone)]
 pub  struct Table{ w: IUPPtr}
 impl Table {
-    pub fn new() -> Table {
+    pub fn new(h:Vec<&str>) -> Self {
         let p= {unsafe { IupMatrix(ptr::null_mut())}};
         set_attr_str(p,"INDEX","-1");
-        set_attrs(p,"NUMLIN_VISIBLE=0,NUMCOL_VISIBLE=0,RESIZEMATRIX=YES,HEIGHT0=8");
-        set_attr_str(p,"NUMCOL","6");
-        set_attr_str(p,"NUMLIN","2");
-        Table{w:p}
+        set_attrs(p,"NUMLIN_VISIBLE=0,NUMCOL_VISIBLE=0,RESIZEMATRIX=YES,HEIGHT0=8,READONLY=YES,EXPAND=YES");
+        set_attr(p,"NUMCOL",h.len().to_string());
+        for (i,el) in h.iter().enumerate(){
+           set_attr_str(p,"0:".to_string()+&(i+1).to_string(),el.to_string()); 
+        }
+        call_back(p,"CLICK_CB",_table_click_);
+
+        Self{w:p}
     }
-    pub fn from(p: IUPPtr) -> Table { Table { w: p }}
+    pub fn from(p: IUPPtr) -> Self { Self { w: p }}
+    
+    pub fn get_index(self)->i32{
+        let idx=get_attr_str(self.w,"INDEX");
+        let r:i32=idx.parse().unwrap();
+        if r<0 {-1} else{r-1}
+    }
+
+    pub fn set_index(self,r:i32)->Self{
+        let idx:i32=get_attr_str(self.w,"INDEX").parse().unwrap();
+        if idx>0 {
+            cursor(self.w,idx,"255 255 255");
+        }
+        cursor(self.w,r+1,CURSOR_COLOR);
+        set_attr_str(self.w,"INDEX",&((r+1).to_string()));
+        set_attr(self.w,"FOCUSCELL",&((r+1).to_string()+":1"));
+        self
+    }
+
+    pub fn on_click(self, f:Box< dyn Fn(i32)>)->Self{
+        TABLES_MAP__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
+        self
+    }
+    pub fn on_dbl_click(self, f:Box< dyn Fn(i32)>)->Self{
+        TABLES_MAP2__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
+        self
+    }
+    pub fn on_menu_click(self, f:Box< dyn Fn(i32)>)->Self{
+        TABLES_MAPM__.with(|c| {
+            let mut v = c.borrow_mut();
+            v.insert(self.w, Box::new(f));
+        });
+        self
+    }
+
+    pub fn fill(self,s:String)->Self{
+        let rows:Vec<&str>=s.split(';').collect();
+        set_attr(self.w,"NUMLIN",rows.len().to_string());
+        for (i,row) in rows.iter().enumerate(){
+            let cols:Vec<&str>=row.split(',').collect();
+            for (j,col) in cols.iter().enumerate(){
+                set_attr_str(self.w,(i+1).to_string()+":"+ &(j+1).to_string(),col.to_string()); 
+            }
+        }
+        self
+    }
+    pub fn fill_ext(self,s:String,funcs:Vec<fn(String)->String>)->Self{
+        if s==""{
+            set_attr(self.w,"NUMLIN","0");
+            return self;
+        }
+        let rows:Vec<&str>=s.split(';').collect();
+        set_attr(self.w,"NUMLIN",rows.len().to_string());
+        for (i,row) in rows.iter().enumerate(){
+            for (j,f) in funcs.iter().enumerate(){
+                set_attr_str(self.w,(i+1).to_string()+":"+ &(j+1).to_string(),f(row.to_string())); 
+            }
+        }
+        self
+    }
+    pub fn set_cols_width(self,wd:Vec<u32>)->Self{
+        let mut s=String::from("");
+        for(i,el) in wd.iter().enumerate(){
+            let r=String::from(",WIDTH")+&(i+1).to_string() + "=" +&el.to_string();
+            s.push_str(&r);
+        }
+        set_attrs(self.w,s);
+        self
+    }
+    pub fn add(self,s:&str)->Self{
+        let s_count=get_attr_str(self.w,"NUMLIN");
+        let line:i32=s_count.parse().unwrap();
+        set_attr(self.w,"ADDLIN",&s_count);
+        let v_vals:Vec<&str>=s.split(',').collect();
+        for (j,el) in v_vals.iter().enumerate(){
+            set_attr_str(self.w,(line+1).to_string()+":"+ &(j+1).to_string(),el.to_string()); 
+        };
+        self.set_index(line);
+        self.scroll_to(line);
+        self
+    }
+    pub fn add_ext(self,s:&str,funcs:Vec<fn(String)->String>)->Self{
+        let s_count=get_attr_str(self.w,"NUMLIN");
+        let line:i32=s_count.parse().unwrap();
+        set_attr(self.w,"ADDLIN",&s_count);
+        for (j,f) in funcs.iter().enumerate(){
+            set_attr_str(self.w,(line+1).to_string()+":"+ &(j+1).to_string(),f(s.to_string())); 
+        };
+        self.set_index(line);
+        self.scroll_to(line);
+        self
+    }
+    pub fn change(self,s:&str)->Self{
+        let idx=get_attr_str(self.w,"INDEX");
+        let line:i32=idx.parse().unwrap();
+        let v_vals:Vec<&str>=s.split(',').collect();
+        for (j,el) in v_vals.iter().enumerate(){
+            set_attr_str(self.w,(line).to_string()+":"+ &(j+1).to_string(),el.to_string()); 
+        };
+        self.set_index(line-1);
+        self
+    }
+    pub fn change_ext(self,s:&str,funcs:Vec<fn(String)->String>)->Self{
+        let idx=get_attr_str(self.w,"INDEX");
+        let line:i32=idx.parse().unwrap();
+        for (j,f) in funcs.iter().enumerate(){
+            set_attr_str(self.w,(line).to_string()+":"+ &(j+1).to_string(),f(s.to_string())); 
+        };
+        self.set_index(line-1);
+        self
+    }
+    pub fn delete(self)->Self{
+        let idx=self.get_index();
+        set_attr_str(self.w,"DELLIN",&(idx+1).to_string());
+        if idx > 0{
+		    self.set_index(idx-1);
+		} else {
+			self.set_index(0);
+		}            
+        self
+    }
+    pub fn set_height(self,n:i32)->Self{
+        set_attr(self.w,"EXPAND", "HORIZONTAL");
+        set_attr(self.w,"SIZE", &("x".to_string()+&n.to_string()));
+        self
+    }
+    pub fn set_header(self,n:i32,s:&str)->Self{
+        set_attr(self.w,&("0:".to_string()+&(n+1).to_string()), s);
+	    set_attr(self.w,"REDRAW", "L0");
+        self
+    }
+    pub fn scroll_to(self,line:i32)->Self{
+        let line_visible:i32 = get_attr_str(self.w,"NUMLIN_VISIBLE").parse().unwrap();
+        let s_origin= get_attr_str(self.w,"ORIGIN");
+        let v_origin:Vec<&str>=s_origin.split(':').collect();
+        let origin:i32=v_origin[0].parse().unwrap();
+        if line >= line_visible+origin-1 {
+		    set_attr(self.w,"ORIGIN", &((line+2-line_visible).to_string()+"*"));
+	    } else if line < origin {
+		    set_attr(self.w,"ORIGIN", &((line+1).to_string()+"*"));
+	    }
+        self
+    }
+    pub fn search(self,store:&Vec<String>,s:String){
+        if s.len()<1{
+            return;
+        };
+        let ss:Vec<&str>=s.split(' ').collect();
+        for (i,el) in store.iter().enumerate(){
+            let it=el.to_lowercase();
+            let names:Vec<&str>=it.split(' ').collect();
+            if names.len() == 1 {
+                if names[0].starts_with(&s){
+                    self.set_index(i as i32);
+                    self.scroll_to(i as i32);
+                    break;
+                }
+            }else  if ss.len()>1{
+                if names[0].starts_with(ss[0]) && names[1].starts_with(ss[1]){
+                    self.set_index(i as i32);
+                    self.scroll_to(i as i32);
+                    break;
+                }
+            }else if s.len()>0 && ss.len()==1{
+                if s.starts_with(" ") && names[1].starts_with(ss[0]){
+                    self.set_index(i as i32);
+                    self.scroll_to(i as i32);
+                    break;
+                }
+                if names[0].starts_with(&s){
+                    self.set_index(i as i32);
+                    self.scroll_to(i as i32);
+                    break;
+                }
+            }else if !s.starts_with(" ") && names[0].starts_with(ss[0]){
+                self.set_index(i as i32);
+                self.scroll_to(i as i32);
+                break;
+            };
+        };
+    }
 }
 
 impl Control for Table{ fn ptr(self) ->IUPPtr{ self.w}}
