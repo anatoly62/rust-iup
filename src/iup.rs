@@ -23,12 +23,12 @@ use libc::{ c_char, c_uchar, c_int, c_float, c_double, c_void };
 pub const IUP_NAME: &'static str         = "IUP - Portable User Interface";
 pub const IUP_COPYRIGHT: &'static str    = "Copyright (C) 1994-2014 Tecgraf, PUC-Rio.";
 pub const IUP_DESCRIPTION: &'static str  = "Multi-platform toolkit for building graphical user interfaces.";
-pub const IUP_VERSION: &'static str      = "3.21"; /* bug fixes are reported only by IupVersion functions */
-pub const IUP_VERSION_NUMBER: c_int      = 312000;
+pub const IUP_VERSION: &'static str      = "3.30"; /* bug fixes are reported only by IupVersion functions */
+pub const IUP_VERSION_NUMBER: c_int      = 330000;
 pub const IUP_VERSION_DATE: &'static str = "2017/20/01"; /* does not include bug fix releases */
 
 pub enum Ihandle {}
-pub type Icallback = extern fn(ih: *mut Ihandle,p1:*const u32,p2:*const u32,p3:*const u32) -> c_int;
+pub type Icallback = extern fn(ih: *mut Ihandle,p1: i32,p2:*const u32,p3:*const u32) -> c_int;
 pub type Iparamcb = extern fn (dialog: *mut Ihandle, param_index: c_int, user_data: *mut c_void) -> c_int;
 
 extern {
@@ -36,7 +36,6 @@ extern {
     /*                        Main API                                      */
     /************************************************************************/
     pub fn IupOpen(argc: *const c_int, argv: *const *const *const c_char) -> c_int;
-    pub fn IupMatrix(action: *const c_char) -> IUPPtr;
     pub fn IupControlsOpen() -> c_int;
 
     pub fn IupClose();
@@ -185,6 +184,7 @@ extern {
     /************************************************************************/
     /*                        Elements                                      */
     /************************************************************************/
+    pub fn IupLoadImage(title: *const c_char) -> *mut Ihandle;
     pub fn IupFill() -> *mut Ihandle;
     pub fn IupRadio(child: *mut Ihandle) -> *mut Ihandle;
     pub fn IupVbox(child: *mut Ihandle, ...) -> *mut Ihandle;
@@ -224,6 +224,8 @@ extern {
     pub fn IupFlatButton(title: *const c_char, action: *const c_char) -> *mut Ihandle;
     pub fn IupCanvas(action: *const c_char) -> *mut Ihandle;
     pub fn IupDialog(child: *mut Ihandle) -> *mut Ihandle;
+    pub fn IupMatrix(action: *const c_char) -> *mut Ihandle;
+
     pub fn IupUser() -> *mut Ihandle;
     pub fn IupLabel(title: *const c_char) -> *mut Ihandle;
     pub fn IupList(action: *const c_char) -> *mut Ihandle;
